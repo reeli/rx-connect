@@ -1,0 +1,34 @@
+{
+  "name": "@reeli/rx-connect",
+  "version": "1.0.0",
+  "description": "rx connect",
+  "main": "index.js",
+  "dependencies": {
+    "@types/lodash": "4.14.116",
+    "@types/react": "16.4.14",
+    "@types/react-redux": "6.0.8",
+    "@types/redux": "3.6.0",
+    "axios": "0.18.0",
+    "lodash": "4.17.11",
+    "react": "16.5.0",
+    "react-redux": "5.0.7",
+    "redux": "4.0.0",
+    "rxjs": "6.3.2"
+  },
+  "devDependencies": {
+    "typescript": "3.0.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reeli/rx-connect.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/reeli/rx-connect/issues"
+  },
+  "homepage": "https://github.com/reeli/rx-connect#readme"
+}
