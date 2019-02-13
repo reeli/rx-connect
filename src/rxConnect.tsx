@@ -3,10 +3,7 @@ import { connect } from "react-redux";
 import { AnyAction } from "redux";
 import { Subject } from "rxjs/internal/Subject";
 import { Subscription } from "rxjs/internal/Subscription";
-import {
-  filter,
-  tap,
-} from "rxjs/operators";
+import { filter, tap } from "rxjs/operators";
 import {
   IRequestAction,
   IRequestFailedAction,
@@ -23,15 +20,19 @@ export interface IRequestCallbacks {
 export const rxConnect: typeof connect = (...args: any[]) => {
   return (Comp: React.ComponentType<any>) => {
     class C extends Component<any> {
-      subscription: Subscription | null = null;
+      subscriptions: Subscription[] | null = null;
       dispatch = (action: IRequestAction) => {
-        this.props.dispatch(action);
         const sub$ = new Subject<AnyAction>();
-        this.subscription = sub$
+        const subscription = this.props.dispatch(sub$);
+
+        sub$
           .pipe(
-            filter((requestAction) => {
-              return isRequestSuccessAction(requestAction) || isRequestFailedAction(requestAction);
-            }),
+            filter(
+              (requestAction) =>
+                (isRequestSuccessAction(requestAction) || isRequestFailedAction(requestAction)) &&
+                requestAction.meta.previousAction.type === action.type &&
+                requestAction.meta.previousAction.payload === action.payload,
+            ),
             tap((requestAction) => {
               const isSuccessAction = requestAction.type === `${action.type}_Success`;
               const isFailedAction = requestAction.type === `${action.type}_Failed`;
@@ -43,13 +44,25 @@ export const rxConnect: typeof connect = (...args: any[]) => {
               }
             }),
           )
-          .subscribe();
-        this.props.dispatch(sub$);
+          .subscribe(() => {
+            // 每一次 request 完成之后，清理 Observable 执行，避免浪费计算能力或者内存资源。如果等到组件 unmount 时再清理，那么当页面上有极大量的 dispatch 时，可能会出现问题。
+            subscription.unsubscribe();
+          });
+
+        // 如果一个页面上调用多次 dispatch，会生成多个 subscription。应该将这些 subscription 存起来，在组件销毁的时候全部 unsubscribe。（之前的问题：只会有最后一个会被 unsubscribe）
+        this.props.subscriptions.push(subscription);
+
+        // dispatch(action) 必须在 dispatch(sub$) 后面。因为 dispatch(sub$) 才会给 rootSubject$ 注册观察者。
+        // dispatch(action) 之后，rootSubject.next(action) 会被调用，此时如果观察者还没有被注册，那么这条消息也就无法通知给观察者。
+        this.props.dispatch(action);
       };
 
-      componentWillMount() {
-        if (this.subscription) {
-          this.subscription.unsubscribe();
+      componentWillUnmount() {
+          // 每一次 request 完成之后都清理了 Observable 执行，那么在组件销毁时还需要再次清理吗？需要，因为有可能出现请求还没有完成，但是组件已经被销毁的情况。（比如极快的从 A 页面切到 B 页面）
+        if (this.subscriptions) {
+          this.subscriptions.forEach((subscription) => {
+            subscription.unsubscribe();
+          });
         }
       }
 
