@@ -55,10 +55,11 @@ export const rxConnect: typeof connect = (...args: any[]) => {
         // dispatch(action) 必须在 dispatch(sub$) 后面。因为 dispatch(sub$) 才会给 rootSubject$ 注册观察者。
         // dispatch(action) 之后，rootSubject.next(action) 会被调用，此时如果观察者还没有被注册，那么这条消息也就无法通知给观察者。
         this.props.dispatch(action);
+        return subscription;
       };
 
       componentWillUnmount() {
-          // 每一次 request 完成之后都清理了 Observable 执行，那么在组件销毁时还需要再次清理吗？需要，因为有可能出现请求还没有完成，但是组件已经被销毁的情况。（比如极快的从 A 页面切到 B 页面）
+        // 每一次 request 完成之后都清理了 Observable 执行，那么在组件销毁时还需要再次清理吗？需要，因为有可能出现请求还没有完成，但是组件已经被销毁的情况。（比如极快的从 A 页面切到 B 页面）
         if (this.subscriptions) {
           this.subscriptions.forEach((subscription) => {
             subscription.unsubscribe();
