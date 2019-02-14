@@ -31,7 +31,7 @@ export const rxConnect: typeof connect = (...args: any[]) => {
               (requestAction) =>
                 (isRequestSuccessAction(requestAction) || isRequestFailedAction(requestAction)) &&
                 requestAction.meta.previousAction.type === action.type &&
-                requestAction.meta.previousAction.payload === action.payload,
+                requestAction.meta.previousAction.payload === action.payload, // 当 request 去重之后，只有一个 requestSuccessAction 被 dispatch，如果在同一个页面 dispatch 了两个完全相同的 action（两个 action 是不同的引用），并且注册了两个 success callback，那么只有第一个 action 的 success callback 会被执行，所以这里可以考虑使用 `isEqual`，而不是直接比较引用。（现在没有问题是因为我们用 store 来共享请求的数据）
             ),
             tap((requestAction) => {
               const isSuccessAction = requestAction.type === `${action.type}_Success`;
